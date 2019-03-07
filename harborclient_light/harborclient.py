@@ -45,18 +45,20 @@ class HarborClient(object):
 
     def get_project_id_by_name(self, project_name):
         """
-        GET /api/projects?project_name={}
+        GET /api/projects
         Get project id by its name
         :param project_name: Name of project
         :return:
         """
-        path = '{}://{}/api/projects?project_name={}'.format(self.protocol, self.host, project_name)
+        path = '{}://{}/api/projects'.format(self.protocol, self.host)
         registry_data = requests.get(path, cookies={'sid': self.session_id}, verify=self.verify_ssl_cert)
 
         if registry_data.status_code == 200 and registry_data.json():
-            project_id = registry_data.json()[0]['project_id']
-            logging.debug('Successfully get project id: {}, project name: {}'.format(project_id, project_name))
-            return project_id
+            for project in registry_data.json():
+                if project['name'] == project_name:
+                    logging.debug('Successfully get project id for project name: {}'.format(project_name))
+                    return project['project_id']
+            logging.error("Fail to get project id from project name", project_name)
         else:
             logging.error("Fail to get project id from project name", project_name)
             return None
@@ -527,4 +529,3 @@ class HarborClient(object):
             logging.info('User does not have permission of admin role.')
         else:
             logging.error('Failed to get configurations')
-
