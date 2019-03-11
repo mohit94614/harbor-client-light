@@ -387,6 +387,7 @@ class HarborClient(object):
         :param repo_name: relevant repository name
         :param src_image: source image to be retagged, e.g. 'stage/app:v1.0'
         :param tag: new tag to be created
+        :return: True if successfully retagged
         """
         endpoint = 'api/repositories/{}/tags'.format(repo_name)
         path = '{}/{}'.format(self.based_url, endpoint)
@@ -397,18 +398,21 @@ class HarborClient(object):
         response = requests.post(path, data=request_body, verify=self.verify_ssl_cert,
                                  cookies={'sid': self.session_id}, headers=headers)
 
+        result = False
         if response.status_code == 200:
-            logging.info('Successfully retag {}{} to {}'.format(repo_name, src_image, tag))
+            logging.info('Successfully retag {} to {}'.format(src_image, tag))
+            result = True
         elif response.status_code == 400:
             logging.error('Invalid image values provided.')
         elif response.status_code == 401:
             logging.error('User has no permission to the source project or destination project.')
         elif response.status_code == 404:
-            logging.error('Project or repository not found.')
+            logging.error('Project or repository {} - not found.'.format(repo_name))
         elif response.status_code == 409:
             logging.error('Target tag already exists')
         else:
             logging.error('Unexpected internal errors.')
+        return result
 
     def check_repository_tag_exist(self, repo_name, tag):
         """
@@ -423,7 +427,7 @@ class HarborClient(object):
         path = '{}/{}'.format(self.based_url, endpoint)
         response = requests.get(path, cookies={'sid': self.session_id}, verify=self.verify_ssl_cert)
         if response.status_code == 200:
-            logging.debug('Repository {}:{} exist.'.format(repo_name, tag))
+            logging.info('{} exists in {}'.format(tag, repo_name))
             result = True
         elif response.status_code == 404:
             logging.debug('Repository {}:{} does not exist.'.format(repo_name, tag))
